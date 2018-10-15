@@ -207,3 +207,41 @@ p
 
 Chapter 5
 =========
+
+Took a while to get back to this book. Had a busy couple weeks. Anyway, this chapter introduces dplyr, which is good because it's been a while for me. I generally use logical indexing, but I think dplyr, especially summarize, is better in the long run.
+
+This first plot describes religion proportions by region.
+
+``` r
+data <- gss_sm
+
+temp <- data %>%
+  select(id, bigregion, religion) %>%
+  group_by(bigregion, religion) %>%
+  summarize(N = n()) %>%
+  mutate(freq = N / sum(N), pct = round(freq*100, 0))
+
+p <- ggplot(temp, aes(x = bigregion, y = pct, fill = religion)) +
+  geom_col(pos = "dodge") + 
+  labs(x = "Region", y = "Percent", fill = "Religion") +
+  theme_minimal() +
+  theme(legend.position = "top")
+p
+```
+
+![](socviz_files/figure-markdown_github/unnamed-chunk-10-1.png)
+
+This facetted version is a bit nicer to read.
+
+``` r
+p <- ggplot(temp, aes(x = religion, y = pct, fill = religion)) +
+  geom_col(pos = "dodge") + 
+  labs(x = NULL, y = "Percent", fill = "Religion") +
+  guides(fill = FALSE) +
+  coord_flip() +
+  facet_grid(~ bigregion) +
+  theme_minimal()
+p
+```
+
+![](socviz_files/figure-markdown_github/unnamed-chunk-11-1.png)
