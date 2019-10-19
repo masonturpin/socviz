@@ -15,12 +15,10 @@ library(tidyverse)
 
     ## -- Attaching packages ---------------------------------------------------------------------------------- tidyverse 1.2.1 --
 
-    ## v ggplot2 2.2.1     v purrr   0.2.5
-    ## v tibble  1.4.2     v dplyr   0.7.6
-    ## v tidyr   0.8.1     v stringr 1.3.1
-    ## v readr   1.1.1     v forcats 0.3.0
-
-    ## Warning: package 'dplyr' was built under R version 3.5.1
+    ## v ggplot2 3.2.1     v purrr   0.3.3
+    ## v tibble  2.1.3     v dplyr   0.8.3
+    ## v tidyr   1.0.0     v stringr 1.4.0
+    ## v readr   1.3.1     v forcats 0.4.0
 
     ## -- Conflicts ------------------------------------------------------------------------------------- tidyverse_conflicts() --
     ## x dplyr::filter() masks stats::filter()
@@ -30,8 +28,6 @@ library(tidyverse)
 library(socviz)
 library(scales)
 ```
-
-    ## Warning: package 'scales' was built under R version 3.5.1
 
     ## 
     ## Attaching package: 'scales'
@@ -148,7 +144,7 @@ p
 
 Some more facetting.
 
-    ## `geom_smooth()` using method = 'gam'
+    ## `geom_smooth()` using method = 'gam' and formula 'y ~ s(x, bs = "cs")'
 
     ## Warning: Removed 18 rows containing non-finite values (stat_smooth).
 
@@ -220,7 +216,12 @@ temp <- data %>%
   group_by(bigregion, religion) %>%
   summarize(N = n()) %>%
   mutate(freq = N / sum(N), pct = round(freq*100, 0))
+```
 
+    ## Warning: Factor `religion` contains implicit NA, consider using
+    ## `forcats::fct_explicit_na`
+
+``` r
 p <- ggplot(temp, aes(x = bigregion, y = pct, fill = religion)) +
   geom_col(pos = "dodge") + 
   labs(x = "Region", y = "Percent", fill = "Religion") +
@@ -245,3 +246,60 @@ p
 ```
 
 ![](socviz_files/figure-markdown_github/unnamed-chunk-11-1.png)
+
+Now into section 5.2, plotting continuous variables by group. This starts with a nice illustration of the importance of coord\_flip(), something I lean on often. I prefer the version of this plot without the fill, but it's a useful exercise regardless.
+
+``` r
+p <- ggplot(organdata, aes(x = reorder(country, donors, na.rm = TRUE), y = donors)) + theme_minimal()
+p + geom_boxplot() +
+  coord_flip() +
+  labs(x = NULL)
+```
+
+    ## Warning: Removed 34 rows containing non-finite values (stat_boxplot).
+
+![](socviz_files/figure-markdown_github/unnamed-chunk-12-1.png)
+
+``` r
+p + geom_boxplot(aes(fill = world)) +
+  coord_flip() +
+  labs(x = NULL, fill = NULL) +
+  theme(legend.position = "top")
+```
+
+    ## Warning: Removed 34 rows containing non-finite values (stat_boxplot).
+
+![](socviz_files/figure-markdown_github/unnamed-chunk-12-2.png)
+
+Next is some nifty dplyr to set up the intro to Cleveland dotplots. One thing not addressed at this point is how to get counts into a table using summarize\_if(). I had to find a surprisingly complicated workaround, and I'm left wondering why there isn't a simpler way.
+
+``` r
+counts <- organdata %>%
+  count(consent_law, country) %>%
+  select(country, n)
+
+by_country <- organdata %>%
+  group_by(consent_law, country) %>%
+  summarize_if(is.numeric, list(mean = mean, sd = sd), na.rm = TRUE) %>%
+  left_join(counts, by_country, by = "country") %>%
+  ungroup()
+
+head(by_country)
+```
+
+    ## # A tibble: 6 x 29
+    ##   consent_law country donors_mean pop_mean pop_dens_mean gdp_mean
+    ##   <chr>       <chr>         <dbl>    <dbl>         <dbl>    <dbl>
+    ## 1 Informed    Austra~        10.6   18318.         0.237   22179.
+    ## 2 Informed    Canada         14.0   29608.         0.297   23711.
+    ## 3 Informed    Denmark        13.1    5257.        12.2     23722.
+    ## 4 Informed    Germany        13.0   80255.        22.5     22163.
+    ## 5 Informed    Ireland        19.8    3674.         5.23    20824.
+    ## 6 Informed    Nether~        13.7   15548.        37.4     23013.
+    ## # ... with 23 more variables: gdp_lag_mean <dbl>, health_mean <dbl>,
+    ## #   health_lag_mean <dbl>, pubhealth_mean <dbl>, roads_mean <dbl>,
+    ## #   cerebvas_mean <dbl>, assault_mean <dbl>, external_mean <dbl>,
+    ## #   txp_pop_mean <dbl>, donors_sd <dbl>, pop_sd <dbl>, pop_dens_sd <dbl>,
+    ## #   gdp_sd <dbl>, gdp_lag_sd <dbl>, health_sd <dbl>, health_lag_sd <dbl>,
+    ## #   pubhealth_sd <dbl>, roads_sd <dbl>, cerebvas_sd <dbl>,
+    ## #   assault_sd <dbl>, external_sd <dbl>, txp_pop_sd <dbl>, n <int>

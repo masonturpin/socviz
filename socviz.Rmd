@@ -1,0 +1,198 @@
+---
+title: "Working through socviz by Kieran Healy"
+author: "Mason Turpin"
+date: "October 3, 2018"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 8, fig.height = 5)
+```
+#Chapter 3
+Here's one of the first plots in the book. Note the use of the "scales" library to edit the x axis.
+```{r}
+library(gapminder)
+library(tidyverse)
+library(socviz)
+library(scales)
+
+gapminder
+p <- ggplot(gapminder, aes(gdpPercap, lifeExp)) + 
+  geom_point(alpha = .3) + 
+  geom_smooth(method = 'gam') +
+  scale_x_log10(labels = scales::dollar)
+p
+```
+
+The following graph sucks! It's got all these lines! But it's a good illustration of how aesthetics work. Notice how things you put in aes() affect variables, while things you put in geom_point() affect the whole graph. Compare the first and second graphs.
+```{r}
+p <- ggplot(gapminder, aes(gdpPercap, lifeExp, color = continent)) + 
+  geom_point(alpha = .3) + 
+  geom_smooth(method = 'gam') +
+  scale_x_log10(labels = scales::dollar)
+p
+p <- ggplot(gapminder, aes(gdpPercap, lifeExp)) + 
+  geom_point(alpha = .3, color = "purple") + 
+  geom_smooth(method = 'gam') +
+  scale_x_log10(labels = scales::dollar)
+p
+```
+
+Below are two options for the final product I would choose. Note the aes() in geom_point.
+```{r}
+p <- ggplot(gapminder, aes(gdpPercap, lifeExp)) + 
+  geom_point(alpha = .3) + 
+  geom_smooth(method = 'gam') +
+  scale_x_log10(labels = scales::dollar) +
+  labs(x = "GDP Per Capita", y = "Life Expectancy in Year",
+       title = "Economic Growth and Life Expectancy",
+       subtitle = "Data points are country-years",
+       caption = "Source: Gapminder") +
+  theme_classic()
+p
+p <- ggplot(gapminder, aes(gdpPercap, lifeExp)) + 
+  geom_point(aes(color = continent)) + 
+  geom_smooth(method = 'gam') +
+  scale_x_log10(labels = scales::dollar) +
+  labs(x = "GDP Per Capita", y = "Life Expectancy in Year",
+       title = "Economic Growth and Life Expectancy",
+       subtitle = "Data points are country-years",
+       caption = "Source: Gapminder") +
+  theme_classic()
+p
+```
+
+#Chapter 4
+
+Here's the first plot from chapter 4. An introduction to facetting.
+```{r, fig.width=10}
+p <- ggplot(gapminder, aes(year, gdpPercap)) + 
+  geom_line(color = 'gray70', aes(group = country)) +
+  geom_smooth(size = 1.1, method = 'loess', se = FALSE) +
+  scale_y_log10(labels = scales::dollar) +
+  facet_wrap(~ continent, ncol = 5) + 
+  labs(x = 'Year', y = 'GDP per Capita',
+       title = 'GDP per Capita in 5 Continents') +
+  theme_minimal()
+p
+```
+
+Some more facetting.
+```{r, echo=FALSE}
+p <- ggplot(gss_sm, aes(age, childs)) +
+  geom_point(alpha = .2) +
+  geom_smooth() + 
+  facet_grid(sex ~ race) +
+  labs(x = 'Age', y = "Children",
+       title = 'Age and Children by Race and Gender') +
+  theme_minimal()
+p            
+```
+
+This next bit was challenging. Bar charts always give me the most trouble in ggplot, but eventually we got to this facetted version to describe religion in different regions of the US.
+```{r, echo=FALSE}
+p <- ggplot(gss_sm, aes(x = religion)) +
+  geom_bar(position = "dodge", aes(y = ..prop.., group = bigregion)) +
+  facet_wrap(~ bigregion) +
+  theme_minimal()
+p 
+```
+
+This graph includes a nice example of subsetting within a ggplot and shows the utility of changing alpha and using fill in density plots.
+```{r}
+oh_wi <- c("OH", "WI")
+p <- ggplot(subset(midwest, subset = state %in% oh_wi), aes(x = area, fill = state, color = state)) +
+  geom_density(alpha = .4) +
+  theme_minimal()
+p
+```
+
+Also, one of my more repetitive ggplot2 hangups comes from forgetting stat = 'identity' in bar charts. If your data is already in the summary form of your choice, this setting allows you to graph the data as it comes without ggplot doing any of its default calculations like switching to counts.
+
+Also, you can just use geom_col(), which assumes stat = 'identity', instead of geom_bar(). I will likely never remember this.
+
+Here's an example. Note that stat and position are not aesthetics and the theme() comes *after* theme_minimal().
+```{r}
+p <- ggplot(titanic, aes(x = fate, y = percent, fill = sex)) +
+  geom_bar(stat = 'identity', position = 'dodge') +
+  theme_minimal() +
+  theme(legend.position = 'top')
+p
+```
+
+This is just a very nice plot to look at. Note guides(fill = FALSE) removes the legend that would normally be generated.
+```{r, fig.width=10}
+p <- ggplot(oecd_sum, aes(x = year, y = diff, fill = hi_lo)) +
+  geom_col(position = 'identity') +
+  guides(fill = FALSE) +
+  labs(x = "Year", y = "Difference in Each Year",
+       title = "The US Life Expectancy Gap", 
+       subtitle = "Difference Between US and OECD Average Life Expectancy, 1960 - 2015", 
+       caption = "Source: OECD. Chart inspired by Christopher Ingraham
+       Washington Post, December 27th, 2017") +
+  theme_minimal()
+p
+```
+
+#Chapter 5
+
+Took a while to get back to this book. Had a busy couple weeks.
+Anyway, this chapter introduces dplyr, which is good because it's been a while for me. I generally use logical indexing, but I think dplyr, especially summarize, is better in the long run.
+
+This first plot describes religion proportions by region.
+```{r}
+data <- gss_sm
+
+temp <- data %>%
+  select(id, bigregion, religion) %>%
+  group_by(bigregion, religion) %>%
+  summarize(N = n()) %>%
+  mutate(freq = N / sum(N), pct = round(freq*100, 0))
+
+p <- ggplot(temp, aes(x = bigregion, y = pct, fill = religion)) +
+  geom_col(pos = "dodge") + 
+  labs(x = "Region", y = "Percent", fill = "Religion") +
+  theme_minimal() +
+  theme(legend.position = "top")
+p
+```
+
+This facetted version is a bit nicer to read.
+```{r}
+p <- ggplot(temp, aes(x = religion, y = pct, fill = religion)) +
+  geom_col(pos = "dodge") + 
+  labs(x = NULL, y = "Percent", fill = "Religion") +
+  guides(fill = FALSE) +
+  coord_flip() +
+  facet_grid(~ bigregion) +
+  theme_minimal()
+p
+```
+
+Now into section 5.2, plotting continuous variables by group. This starts with a nice illustration of the importance of coord_flip(), something I lean on often. I prefer the version of this plot without the fill, but it's a useful exercise regardless.
+```{r}
+p <- ggplot(organdata, aes(x = reorder(country, donors, na.rm = TRUE), y = donors)) + theme_minimal()
+p + geom_boxplot() +
+  coord_flip() +
+  labs(x = NULL)
+
+p + geom_boxplot(aes(fill = world)) +
+  coord_flip() +
+  labs(x = NULL, fill = NULL) +
+  theme(legend.position = "top")
+```
+
+Next is some nifty dplyr to set up the intro to Cleveland dotplots. One thing not addressed at this point is how to get counts into a table using summarize_if(). I had to find a surprisingly complicated workaround, and I'm left wondering why there isn't a simpler way.
+```{r}
+counts <- organdata %>%
+  count(consent_law, country) %>%
+  select(country, n)
+
+by_country <- organdata %>%
+  group_by(consent_law, country) %>%
+  summarize_if(is.numeric, list(mean = mean, sd = sd), na.rm = TRUE) %>%
+  left_join(counts, by_country, by = "country") %>%
+  ungroup()
+
+head(by_country)
+```
