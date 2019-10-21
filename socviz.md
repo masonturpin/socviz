@@ -271,7 +271,7 @@ p + geom_boxplot(aes(fill = world)) +
 
 ![](socviz_files/figure-markdown_github/unnamed-chunk-12-2.png)
 
-Next is some nifty dplyr to set up the intro to Cleveland dotplots. One thing not addressed at this point is how to get counts into a table using summarize\_if(). I had to find a surprisingly complicated workaround, and I'm left wondering why there isn't a simpler way.
+Next is some nifty dplyr to set up the intro to Cleveland dotplots. One thing not addressed at this point is how to get counts into a table using summarize\_if(). They aren't necessary for the purposes of this book, but I like having them in a table to check that my summaries make sense (this concept really messed me up in an interview a couple months ago). I had to find a surprisingly complicated workaround, and I'm left wondering why there isn't a simpler way.
 
 ``` r
 counts <- organdata %>%
@@ -303,3 +303,34 @@ head(by_country)
     ## #   gdp_sd <dbl>, gdp_lag_sd <dbl>, health_sd <dbl>, health_lag_sd <dbl>,
     ## #   pubhealth_sd <dbl>, roads_sd <dbl>, cerebvas_sd <dbl>,
     ## #   assault_sd <dbl>, external_sd <dbl>, txp_pop_sd <dbl>, n <int>
+
+Here's a couple versions of the Cleveland dotplots made using this data. A note about the second plot: when usings the "scales" attribute in "facet\_wrap", your "coord\_flip()" will not be respected! I had to use "free\_y" to get the countries to not repeat, but that is actually the x-axis. Notably, this is different from how Kieran Healy makes the plot, and I now see why he avoided using coord\_flip() in conjunction with facet\_wrap. You're really just asking for trouble at that point.
+
+``` r
+p <- ggplot(by_country, aes(x = reorder(country, donors_mean), y = donors_mean, color = consent_law)) + theme_minimal()
+p + geom_point(size = 3) +
+  coord_flip() +
+  labs(x = NULL, y = "Donor Procurement Rate", color = "Consent Law") +
+  theme(legend.position = "top")
+```
+
+![](socviz_files/figure-markdown_github/unnamed-chunk-14-1.png)
+
+``` r
+p <- ggplot(by_country, aes(x = reorder(country, donors_mean), y = donors_mean)) + theme_minimal()
+p + geom_point(size = 3) +
+  coord_flip() +
+  facet_wrap(. ~ consent_law, ncol = 1, scales = "free_y") + 
+  labs(x = NULL, y = "Donor Procurement Rate")
+```
+
+![](socviz_files/figure-markdown_github/unnamed-chunk-14-2.png)
+
+``` r
+p + geom_pointrange(aes(ymin = donors_mean - donors_sd, ymax = donors_mean + donors_sd)) +
+  labs(x = NULL, y = "Donor Procurement Rate") +
+  coord_flip() +
+  theme(legend.position = "top")
+```
+
+![](socviz_files/figure-markdown_github/unnamed-chunk-14-3.png)
