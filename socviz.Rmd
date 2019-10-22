@@ -216,3 +216,24 @@ p + geom_pointrange(aes(ymin = donors_mean - donors_sd, ymax = donors_mean + don
   coord_flip()
 ```
 
+In section 5.3, plotting text is introduced. Of interest is geom_text_repel(), which makes effective plotting of labels extremely simple. Here's the main plot of the section, one that may be a bit overcrowded.
+```{r}
+p_title <- "Presidential Elections: Popular & Electoral College Margins"
+p_subtitle <- "1824-2016"
+p_caption <- "Data for 2016 are provisional."
+x_label <- "Winner's share of Popular Vote"
+y_label <- "Winner's share of Electoral College Votes"
+
+library(ggrepel)
+
+p <- ggplot(elections_historic, aes(x = popular_pct, y = ec_pct, label = winner_label)) + theme_minimal()
+
+p + geom_hline(yintercept = 0.5, size = 1.4, color = "gray80") +
+  geom_vline(xintercept = 0.5, size = 1.4, color = "gray80") +
+  geom_point() +
+  geom_text_repel() +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = x_label, y = y_label, title = p_title, subtitle = p_subtitle,
+       caption = p_caption)
+```

@@ -304,7 +304,7 @@ head(by_country)
     ## #   pubhealth_sd <dbl>, roads_sd <dbl>, cerebvas_sd <dbl>,
     ## #   assault_sd <dbl>, external_sd <dbl>, txp_pop_sd <dbl>, n <int>
 
-Here's a couple versions of the Cleveland dotplots made using this data. A note about the second plot: when usings the "scales" attribute in "facet\_wrap", your "coord\_flip()" will not be respected! I had to use "free\_y" to get the countries to not repeat, but that is actually the x-axis. Notably, this is different from how Kieran Healy makes the plot, and I now see why he avoided using coord\_flip() in conjunction with facet\_wrap. You're really just asking for trouble at that point.
+Here are a couple versions of the Cleveland dotplots made using this data. A note about the second plot: when usings the "scales" attribute in "facet\_wrap", your "coord\_flip()" will not be respected! I had to use "free\_y" to get the countries to not repeat, but that is actually the x-axis. Notably, this is different from how Kieran Healy makes the plot, and I now see why he avoided using coord\_flip() in conjunction with facet\_wrap. You're really just asking for trouble at that point.
 
 ``` r
 p <- ggplot(by_country, aes(x = reorder(country, donors_mean), y = donors_mean, color = consent_law)) + theme_minimal()
@@ -329,8 +329,32 @@ p + geom_point(size = 3) +
 ``` r
 p + geom_pointrange(aes(ymin = donors_mean - donors_sd, ymax = donors_mean + donors_sd)) +
   labs(x = NULL, y = "Donor Procurement Rate") +
-  coord_flip() +
-  theme(legend.position = "top")
+  coord_flip()
 ```
 
 ![](socviz_files/figure-markdown_github/unnamed-chunk-14-3.png)
+
+In section 5.3, plotting text is introduced. Of interest is geom\_text\_repel(), which makes effective plotting of labels extremely simple. Here's the main plot of the section, one that may be a bit overcrowded.
+
+``` r
+p_title <- "Presidential Elections: Popular & Electoral College Margins"
+p_subtitle <- "1824-2016"
+p_caption <- "Data for 2016 are provisional."
+x_label <- "Winner's share of Popular Vote"
+y_label <- "Winner's share of Electoral College Votes"
+
+library(ggrepel)
+
+p <- ggplot(elections_historic, aes(x = popular_pct, y = ec_pct, label = winner_label)) + theme_minimal()
+
+p + geom_hline(yintercept = 0.5, size = 1.4, color = "gray80") +
+  geom_vline(xintercept = 0.5, size = 1.4, color = "gray80") +
+  geom_point() +
+  geom_text_repel() +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(x = x_label, y = y_label, title = p_title, subtitle = p_subtitle,
+       caption = p_caption)
+```
+
+![](socviz_files/figure-markdown_github/unnamed-chunk-15-1.png)
